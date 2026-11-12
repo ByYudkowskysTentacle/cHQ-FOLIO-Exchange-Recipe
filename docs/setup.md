@@ -49,7 +49,7 @@ Ask your collectionHQ implementation contact for:
 
 1. **An SFTP account:** server name, user name and password.
 2. **The folder** on the server for bibs and items.
-3. **The server's host key fingerprint**, to compare with the one FOLIO-Exchange reads from the server.
+3. **The server's host key fingerprint**, if they'll give one, to compare with the one FOLIO-Exchange reads from the server. Setup and delivery work without it.
 4. Answers to the open points in [layout.md](layout.md#confirm-with-collectionhq), or at least the cadence.
 
 What is known about collectionHQ's US server, as of October 2026:
@@ -103,7 +103,7 @@ folio-exchange init C:\FOLIO-Exchange\mylibrary
 | How are the files delivered | **upload to the vendor's SFTP server**, if you have the account; otherwise **not yet**, and run `init` again when you do |
 | SFTP server name, port | `sftp.us.collectionhq.com`, `22`, unless collectionHQ says otherwise |
 | SFTP user name, folder on the server | from collectionHQ (`.` is the login folder) |
-| Does the fingerprint match | **yes** only if it matches the one collectionHQ gave you. Without theirs yet, choose **I don't have the vendor's value yet**: FOLIO-Exchange keeps the key but never logs in to the server, and the feed stays paused, until you run `init` again and answer that it matches. If setup says delivery stays off (it could not reach the server), run `init` again later |
+| Does the fingerprint match | **yes** only if it matches the one collectionHQ gave you. Without theirs, choose **I don't have the vendor's value yet**: FOLIO-Exchange keeps the key the server shows, delivers with it and refuses any other key. When collectionHQ confirms it, run `init` again and answer that it matches. If the server shows a different key from the one kept before, that answer isn't offered: stop and ask collectionHQ. If setup says delivery stays off (it could not reach the server), run `init` again later |
 | SFTP password | typed at the prompt; stored in the keyring. Leave it blank to store it later with `folio-exchange secret set chq`; the feed stays paused until then |
 | When should it run | `manual` for now; step 7 sets the schedule |
 | Alerts | email, or a Slack or Teams webhook, for failed runs |
@@ -124,7 +124,7 @@ folio-exchange preview chq
 folio-exchange run chq --no-deliver
 ```
 
-- `check` logs in, tests every endpoint the recipe needs and shows record counts. `check --delivery` logs in to collectionHQ's server and lists the folder, without uploading anything. While the key is unconfirmed it does not log in; it shows the server's current key next to the stored one.
+- `check` logs in, tests every endpoint the recipe needs and shows record counts. `check --delivery` logs in to collectionHQ's server and lists the folder, without uploading anything. With an unconfirmed key it logs in the same way, refuses any other key, and says the key isn't confirmed with collectionHQ yet.
 - `preview` builds files from a small sample and prints a few item rows.
 - `run --no-deliver` downloads everything into the local cache and builds the full files. The first run fetches the whole catalogue: on FOLIO's reference system, 10,000 bibs with their MARC took 30 seconds, so 300,000 might take around a quarter of an hour, depending on your host. Later runs fetch only what changed.
 
@@ -150,10 +150,10 @@ Change local settings in `feeds\chq.yaml` as they answer: the folder (`delivery.
 
 ## 6. The first delivery
 
-When collectionHQ has confirmed the folder and the host key, and the files look right:
+When collectionHQ has confirmed the folder, and the files look right:
 
 ```powershell
-folio-exchange init C:\FOLIO-Exchange\mylibrary   # only if the key was unconfirmed: answer that it matches
+folio-exchange init C:\FOLIO-Exchange\mylibrary   # optional: once collectionHQ confirms the key, answer that it matches
 folio-exchange feeds resume chq          # if the feed is still paused
 folio-exchange check --delivery
 folio-exchange run chq
