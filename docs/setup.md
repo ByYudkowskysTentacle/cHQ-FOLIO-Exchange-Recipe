@@ -172,6 +172,7 @@ It prints the one command that registers an hourly Windows scheduled task (or a 
 
 - The task must run as the Windows user who stored the passwords, because keyring entries belong to that user. The printed command does this, and asks for that user's Windows password for Task Scheduler.
 - A missed slot (the PC was off) runs at the next hourly start.
+- A scheduled run that fails is tried again after 1, 2 and 4 hours, then every 8 hours: six attempts in all, over about a day (`runs.max_attempts_per_slot` in `site.yaml`). A retry that fails with the same error sends no second alert. A login that FOLIO or collectionHQ's server refuses isn't tried again until the next scheduled time, so a wrong password can't lock the account. When a slot's attempts run out, one alert says so and when the next one is: fix the problem, then send the delivery by hand with `folio-exchange run chq`.
 - On Linux under cron or systemd there is often no keyring session: use `secret: env:NAME` in the files and an environment file instead.
 
 ## When something goes wrong
@@ -179,10 +180,10 @@ It prints the one command that registers an hourly Windows scheduled task (or a 
 | What you see | What to do |
 | --- | --- |
 | `Cannot reach FOLIO at …` | Check the API address, and that the PC is on the library network or VPN. |
-| `FOLIO refused the login …` | Check the user name and tenant id; store the password again with `folio-exchange secret set folio`. A refused password is tried only once per run, so it cannot lock the account. |
+| `FOLIO refused the login …` | Check the user name and tenant id; store the password again with `folio-exchange secret set folio`. A refused password is tried only once per run, and a scheduled run doesn't try it again until the next scheduled time, so it cannot lock the account. If a scheduled run stopped here, send its delivery with `folio-exchange run chq` once `folio-exchange check` works. |
 | `DENIED … the account lacks …` | Send the listed permissions to your FOLIO administrator. |
 | A run is **blocked** | The item count fell below 90% of the last delivery, or rows are missing a required value. The message says which check failed and gives the counts. If FOLIO is wrong, fix it and run again; if the drop is real (a big weed), `release chq` sends the blocked run after you confirm. |
-| The SFTP login fails | Test with `folio-exchange check --delivery`; store the password again with `folio-exchange secret set chq`. |
+| The SFTP login fails | Test with `folio-exchange check --delivery`; store the password again with `folio-exchange secret set chq`. A scheduled run doesn't try a refused login again until the next scheduled time: if one stopped here, send its delivery with `folio-exchange run chq` once the test works. |
 | A host key mismatch | Stop and ask collectionHQ. A changed key can mean the wrong server. |
 
 Every run is recorded: `folio-exchange history` lists runs, `history --show <number>` shows one in full, and `history --audit` shows who changed, released or upgraded what. For a FOLIO-Exchange problem that is not about collectionHQ, open an issue in [FOLIO-Exchange](https://github.com/ByYudkowskysTentacle/FOLIO-Exchange/issues).
